@@ -1,0 +1,3 @@
+tc_addon_name=tc_mysql_module
+PROTOCOL_MODULES="tc_mysql_module"
+TC_ADDON_SRCS="$tc_addon_dir/tc_mysql_module.c"

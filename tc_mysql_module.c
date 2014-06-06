@@ -159,12 +159,12 @@ static int
 prepare_for_renew_session(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 {
     uint16_t            size_ip;
-    uint32_t            total_cont_len, base_seq;
-    mysql_table_item_t *item;
+    uint32_t            tot_clen, base_seq;
+    tc_iph_t           *fir_ip, *t_ip;
+    tc_tcph_t          *fir_tcp, *t_tcp;
     p_link_node         ln;
     unsigned char      *p;
-    tc_iph_t     *fir_ip, *t_ip;
-    tc_tcph_t    *fir_tcp, *t_tcp;
+    mysql_table_item_t *item;
 
     if (!ctx.fir_auth_pack) {
         tc_log_info(LOG_WARN, 0, "no first auth pack here");
@@ -173,25 +173,25 @@ prepare_for_renew_session(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 
     s->sm.need_rep_greet = 1;
 
-    fir_ip         = ctx.fir_auth_pack;
-    fir_ip->saddr  = ip->saddr;
-    size_ip               = fir_ip->ihl << 2;
+    fir_ip        = ctx.fir_auth_pack;
+    fir_ip->saddr = ip->saddr;
+    size_ip       = fir_ip->ihl << 2;
     fir_tcp = (tc_tcph_t *) ((char *) fir_ip + size_ip);
     fir_tcp->source = tcp->source;
 
-    total_cont_len = ctx.fir_auth_cont_len;
+    tot_clen = ctx.fir_auth_cont_len;
 
     item = hash_find(ctx.table, s->hash_key);
     if (item) {
-        total_cont_len += item->tot_cont_len;
+        tot_clen += item->tot_cont_len;
     }
 
-    tc_log_debug2(LOG_INFO, 0, "total len subtracted:%u,p:%u", total_cont_len, 
+    tc_log_debug2(LOG_INFO, 0, "total len subtracted:%u,p:%u", tot_clen, 
             ntohs(s->src_port));
 
-    tcp->seq     = htonl(ntohl(tcp->seq) - total_cont_len);
+    tcp->seq     = htonl(ntohl(tcp->seq) - tot_clen);
     fir_tcp->seq = htonl(ntohl(tcp->seq) + 1);
-    save_packet(s, s->slide_win_packs, fir_ip, fir_tcp);  
+    tc_save_pack(s, s->slide_win_packs, fir_ip, fir_tcp);  
 
     base_seq = ntohl(fir_tcp->seq) + ctx.fir_auth_cont_len;
 
@@ -202,7 +202,7 @@ prepare_for_renew_session(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
             t_ip  = (tc_iph_t *) (p + ETHERNET_HDR_LEN);
             t_tcp = (tc_tcph_t *) ((char *) t_ip + size_ip);
             t_tcp->seq = htonl(base_seq);
-            save_packet(s, s->slide_win_packs, t_ip, t_tcp);  
+            tc_save_pack(s, s->slide_win_packs, t_ip, t_tcp);  
             base_seq += TCP_PAYLOAD_LENGTH(t_ip, t_tcp);
             ln = link_list_get_next(item->list, ln);
         }

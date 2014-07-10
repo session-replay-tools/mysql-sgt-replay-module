@@ -257,19 +257,18 @@ proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
             payload     = payload + 3; 
             pack_number = payload[0];
 
-            /* if it is the second authenticate_user, skip it */
-            if (pack_number == (unsigned char) SEC_AUTH_PACKET_NUM) { 
+            if (pack_number == 0) { 
+                mysql_sess->req_begin = 1; 
+                tc_log_debug0(LOG_NOTICE, 0, "it has no sec auth packet");
 
+            } else if (pack_number == (unsigned char) SEC_AUTH_PACKET_NUM) { 
+                /* if it is the second authenticate_user, skip it */
                 is_need_omit = true;
                 tc_log_debug0(LOG_NOTICE, 0, "omit sec validation for mysql");
                 mysql_sess->req_begin = 1; 
                 mysql_sess->seq_diff = s->cur_pack.cont_len;
 
                 return PACK_NEXT;
-
-            } else if (pack_number == 0) { 
-                mysql_sess->req_begin = 1; 
-                tc_log_debug0(LOG_NOTICE, 0, "it has no sec auth packet");
             }    
         }    
 

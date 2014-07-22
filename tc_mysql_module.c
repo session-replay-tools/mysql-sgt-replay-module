@@ -26,11 +26,10 @@ typedef struct {
     int         fir_auth_cont_len;
 } tc_mysql_ctx_t;
 
-/* TODO allocate it on heap */
 static tc_mysql_ctx_t ctx;
 
 static int 
-init_mysql_module(void *clt_settings)
+init_mysql_module()
 {
 
     ctx.pool = tc_create_pool(TC_DEFAULT_POOL_SIZE, 0, 0);
@@ -49,7 +48,7 @@ init_mysql_module(void *clt_settings)
 
 
 static void 
-exit_mysql_module(void *clt_settings) 
+exit_mysql_module() 
 {
     if (ctx.pool != NULL) {
         tc_destroy_pool(ctx.pool);
@@ -229,13 +228,6 @@ proc_when_sess_created(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 
 
 static int 
-proc_when_sess_destroyed(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
-{
-    return TC_OK;
-}
-
-
-static int 
 proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 {
     bool              is_need_omit;
@@ -312,7 +304,7 @@ tc_module_t tc_mysql_module = {
     prepare_for_renew_session,
     check_pack_needed_for_recons,
     proc_when_sess_created,
-    proc_when_sess_destroyed,
+    NULL,
     NULL,
     proc_auth,
     NULL,

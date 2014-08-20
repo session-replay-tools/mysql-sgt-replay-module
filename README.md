@@ -26,41 +26,41 @@ Please refer to [TCPCopy](https://github.com/session-replay-tools/tcpcopy) for m
 ##Usage guide
  
 ###1) On the target server which runs MySQL applications:
-	    a) Set route command to route response packets to the assistant server
+      a) Set route command to route response packets to the assistant server
 
         For example:
 
-	    Assume 10.110.12.18 is the IP address of the assistant server and 
-        10.110.12.15 is the MySQL client IP address. 
-        We set the following route command to route all responses to the 
-        10.110.12.15 to the assistant server.
+           Assume 10.110.12.18 is the IP address of the assistant server and 
+        10.110.12.15 is the MySQL client IP address. We set the following route 
+        command to route all responses to the 10.110.12.15 to the assistant server.
 
            route add -host 10.110.12.15 gw 10.110.12.18
         
-        b) Start MySQL with --skip-grant-tables
+      b) Start MySQL with --skip-grant-tables
 
 ###2) On the assistant server which runs intercept(root privilege is required):
-
-	   ./intercept -F <filter> -i <device,> 
+   
+       ./intercept -F <filter> -i <device,> 
 	  
-	  Note that the filter format is the same as the pcap filter.
-	  For example:
+       Note that the filter format is the same as the pcap filter.
+        
+       For example:
 
-	  ./intercept -i eth0 -F 'tcp and src port 3306' -d
+          ./intercept -i eth0 -F 'tcp and src port 3306' -d
 
-	  intercept will capture response packets of the TCP based application which 
+          intercept will capture response packets of the TCP based application which 
       listens on port 3306 from device eth0 
     
 	
 ###3) On the online source server (root privilege is required):
       
-	  ./tcpcopy -x localServerPort-targetServerIP:targetServerPort -s <intercept server,> 
-	  
+      ./tcpcopy -x localServerPort-targetServerIP:targetServerPort -s <intercept server,> 
+      
       For example(assume 10.110.12.17 is the IP address of the target server):
 
-	  ./tcpcopy -x 3306-10.110.12.17:3306 -s 10.110.12.18 
+          ./tcpcopy -x 3306-10.110.12.17:3306 -s 10.110.12.18 
 
-	  tcpcopy would capture MySQL packets(assume MySQL listens on 3306 port) on current 
+          tcpcopy would capture MySQL packets(assume MySQL listens on 3306 port) on current 
       server, do the necessary modifications and send these packets to the target port 
       '3306' on '10.110.12.17'(the target MySQL), and connect 10.110.12.18 for asking 
       intercept to pass response packets to it.

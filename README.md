@@ -4,40 +4,26 @@ mysql-sgt-replay-module is a TCPCopy module that can be used to replay MySQL ses
 
 Please refer to [TCPCopy](https://github.com/session-replay-tools/tcpcopy) for more details before reading the following.
 
-##Quick start
+##Installation
 
-Two quick start options are available for *mysql-sgt-replay-module*:
-
-* [Download the latest intercept release](https://github.com/session-replay-tools/mysql-sgt-replay-module/releases).
-* Clone the repo: 
-`git clone git://github.com/session-replay-tools/mysql-sgt-replay-module.git`.
-
-Two quick start options are available for *intercept*:
-
-* [Download the latest intercept release](https://github.com/session-replay-tools/intercept/releases).
-* Clone the repo: `git clone git://github.com/session-replay-tools/intercept.git`.
-
-Two quick start options are available for *tcpcopy*:
-
-* [Download the latest tcpcopy release](https://github.com/session-replay-tools/tcpcopy/releases).
-* Clone the repo: `git clone git://github.com/session-replay-tools/tcpcopy.git`.
+###Getting intercept installed on the assistant server
+1. git clone git://github.com/session-replay-tools/intercept.git
+2. cd intercept
+3. ./configure 
+4. make
+5. make install
 
 
-##Getting intercept installed on the assistant server
-1. cd intercept
-2. ./configure 
-3. make
-4. make install
+###Getting tcpcopy installed on the online server
+1. git clone git://github.com/session-replay-tools/tcpcopy.git
+2. cd tcpcopy
+3. git clone git://github.com/session-replay-tools/mysql-sgt-replay-module.git
+4. ./configure --set-protocol-module=mysql-sgt-replay-module
+5. make
+6. make install
 
 
-##Getting tcpcopy installed on the online server
-1. cd tcpcopy
-2. ./configure --set-protocol-module=/path/to/mysql-sgt-replay-module
-3. make
-4. make install
-
-
-##Running TCPCopy
+##Usage guide
  
 ###1) On the target server which runs MySQL applications:
 	    a) Set route command to route response packets to the assistant server
@@ -75,9 +61,9 @@ Two quick start options are available for *tcpcopy*:
 	  ./tcpcopy -x 3306-10.110.12.17:3306 -s 10.110.12.18 
 
 	  tcpcopy would capture MySQL packets(assume MySQL listens on 3306 port) on current 
-      server, do the necessary modifications and send these packets to the target port '3306' 
-      on '10.110.12.17'(the target MySQL), and connect 10.110.12.18 for asking intercept 
-      to pass response packets to it.
+      server, do the necessary modifications and send these packets to the target port 
+      '3306' on '10.110.12.17'(the target MySQL), and connect 10.110.12.18 for asking 
+      intercept to pass response packets to it.
 
 ##Release History
 + 2014.09  v1.0    mysql-sgt-replay-module released

@@ -9,6 +9,7 @@
 
 typedef struct {
     uint32_t req_begin:1;
+    uint32_t fir_auth_added:1;
     uint32_t seq_diff;
 } tc_mysql_session;
 
@@ -166,10 +167,20 @@ prepare_for_renew_session(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
     p_link_node         ln;
     unsigned char      *p;
     mysql_table_item_t *item;
+    tc_mysql_session   *mysql_sess;
 
     if (!ctx.fir_auth_pack) {
         tc_log_info(LOG_WARN, 0, "no first auth pack here");
         return TC_ERR;
+    }
+
+    mysql_sess = s->data;
+    if (mysql_sess == NULL) {
+        tc_log_info(LOG_WARN, 0, "mysql session structure is not allocated");
+        return TC_ERR;
+    } else if (mysql_sess->fir_auth_added) {
+        tc_log_info(LOG_NOTICE, 0, "dup visit prepare_for_renew_session");
+        return TC_OK;
     }
 
     s->sm.need_rep_greet = 1;
@@ -193,6 +204,7 @@ prepare_for_renew_session(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
     tcp->seq     = htonl(ntohl(tcp->seq) - tot_clen);
     fir_tcp->seq = htonl(ntohl(tcp->seq) + 1);
     tc_save_pack(s, s->slide_win_packs, fir_ip, fir_tcp);  
+    mysql_sess->fir_auth_added = 1;
 
     base_seq = ntohl(fir_tcp->seq) + ctx.fir_auth_cont_len;
 

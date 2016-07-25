@@ -245,6 +245,32 @@ proc_when_sess_created(tc_sess_t *s)
     return TC_OK;
 }
 
+static int 
+proc_when_sess_destroyed(tc_sess_t *s)
+{
+    link_list          *list;
+    p_link_node         ln, tln;
+    mysql_table_item_t *item;
+
+    item = hash_find(ctx.table, s->hash_key);
+    if (item != NULL) {
+        list = item->list;
+        ln   = link_list_first(list);
+        while (ln) {
+            tln = ln;
+            ln = link_list_get_next(list, ln);
+            link_list_remove(list, tln);
+            tc_pfree(ctx.pool, tln->data);
+            tc_pfree(ctx.pool, tln);
+        }
+
+        tc_pfree(ctx.pool, list);
+
+        hash_del(ctx.table, ctx.pool, s->hash_key);
+    }
+
+    return TC_OK;
+}
 
 static int 
 proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
@@ -323,7 +349,7 @@ tc_module_t tc_mysql_module = {
     prepare_for_renew_session,
     check_pack_needed_for_recons,
     proc_when_sess_created,
-    NULL,
+    proc_when_sess_destroyed,
     NULL,
     proc_auth,
     NULL,

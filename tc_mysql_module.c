@@ -6,6 +6,7 @@
 #define COM_QUERY 3
 #define SEC_AUTH_PACKET_NUM 3
 #define MAX_SP_SIZE 256
+#define MAX_TABLE_ITEM_NUM 1048576
 
 typedef struct {
     uint32_t req_begin:1;
@@ -128,6 +129,9 @@ check_pack_needed_for_recons(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
                 item->list = link_list_create(ctx.pool);
                 if (item->list != NULL) {
                     hash_add(ctx.table, ctx.pool, s->hash_key, item);
+                    if (ctx.table->total > MAX_TABLE_ITEM_NUM) {
+                        tc_log_info(LOG_INFO, 0, "too many items in ctx.table");
+                    }
                 } else {
                     tc_log_info(LOG_ERR, 0, "list create err");
                     return false;

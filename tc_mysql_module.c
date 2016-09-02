@@ -355,6 +355,7 @@ tc_module_t tc_mysql_module = {
     proc_when_sess_created,
     proc_when_sess_destroyed,
     NULL,
+    NULL,
     proc_auth,
     NULL,
     adjust_clt_sequence

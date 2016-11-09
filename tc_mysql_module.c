@@ -34,7 +34,7 @@ static int
 init_mysql_module()
 {
 
-    ctx.pool = tc_create_pool(TC_DEFAULT_POOL_SIZE, 0, 0);
+    ctx.pool = tc_create_pool(TC_PLUGIN_POOL_SIZE, 0, 0);
 
     if (ctx.pool) {
 
@@ -50,8 +50,56 @@ init_mysql_module()
 
 
 static void 
+remove_obsolete_resources(int is_full) 
+{
+    time_t      thresh_access_tme;
+    uint32_t    i, cnt = 0;
+    link_list  *l;
+    hash_node  *hn;
+    p_link_node ln, next_ln;
+
+    if (ctx.table == NULL || ctx.table->total == 0) {
+        return;
+    }
+
+    if (is_full) {
+        thresh_access_tme = tc_time() + 1;
+    } else {
+        thresh_access_tme = tc_time() - MAX_IDLE_TIME;
+    }
+
+    for (i = 0; i < ctx.table->size; i ++) {
+        l  = get_link_list(ctx.table, i);
+        if (l->size > 0) {
+            ln = link_list_first(l);
+            while (ln) {
+                hn = (hash_node *) ln->data;
+                next_ln = link_list_get_next(l, ln);
+                if (hn->access_time < thresh_access_tme) {
+                    ctx.table->total--;
+                    link_list_remove(l, ln);
+                    tc_pfree(ctx.pool, hn->data);
+                    tc_pfree(ctx.pool, ln->data);
+                    tc_pfree(ctx.pool, ln);
+                }
+                ln = next_ln;
+            }
+            
+            cnt += l->size;
+
+            if (ctx.table->total == cnt) {
+                break;
+            }
+        }
+    }
+}
+
+
+static void 
 exit_mysql_module() 
 {
+    tc_log_info(LOG_INFO, 0, "call exit_mysql_module");
+    remove_obsolete_resources(1);
     if (ctx.pool != NULL) {
         tc_destroy_pool(ctx.pool);
         ctx.table = NULL;
@@ -268,6 +316,7 @@ proc_when_sess_destroyed(tc_sess_t *s)
             tc_pfree(ctx.pool, tln);
         }
 
+        tc_pfree(ctx.pool, item);
         tc_pfree(ctx.pool, list);
 
         hash_del(ctx.table, ctx.pool, s->hash_key);
@@ -349,6 +398,7 @@ tc_module_t tc_mysql_module = {
     NULL,
     init_mysql_module,
     exit_mysql_module,
+    remove_obsolete_resources,
     check_renew_session,
     prepare_for_renew_session,
     check_pack_needed_for_recons,

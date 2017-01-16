@@ -30,6 +30,7 @@ typedef struct {
 
 static tc_mysql_ctx_t ctx;
 
+
 static int 
 init_mysql_module()
 {
@@ -46,6 +47,35 @@ init_mysql_module()
     } 
 
     return TC_ERR;
+}
+
+
+static int 
+release_resources(uint64_t key)
+{
+    link_list          *list;
+    p_link_node         ln, tln;
+    mysql_table_item_t *item;
+
+    item = hash_find(ctx.table, key);
+    if (item != NULL) {
+        list = item->list;
+        ln   = link_list_first(list);
+        while (ln) {
+            tln = ln;
+            ln = link_list_get_next(list, ln);
+            link_list_remove(list, tln);
+            tc_pfree(ctx.pool, tln->data);
+            tc_pfree(ctx.pool, tln);
+        }
+
+        tc_pfree(ctx.pool, item);
+        tc_pfree(ctx.pool, list);
+
+        hash_del(ctx.table, ctx.pool, key);
+    }
+
+    return TC_OK;
 }
 
 
@@ -76,11 +106,7 @@ remove_obsolete_resources(int is_full)
                 hn = (hash_node *) ln->data;
                 next_ln = link_list_get_next(l, ln);
                 if (hn->access_time < thresh_access_tme) {
-                    ctx.table->total--;
-                    link_list_remove(l, ln);
-                    tc_pfree(ctx.pool, hn->data);
-                    tc_pfree(ctx.pool, ln->data);
-                    tc_pfree(ctx.pool, ln);
+                    release_resources(hn->key);
                 }
                 ln = next_ln;
             }
@@ -297,38 +323,17 @@ proc_when_sess_created(tc_sess_t *s)
     return TC_OK;
 }
 
+
 static int 
 proc_when_sess_destroyed(tc_sess_t *s)
 {
-    link_list          *list;
-    p_link_node         ln, tln;
-    mysql_table_item_t *item;
-
-    item = hash_find(ctx.table, s->hash_key);
-    if (item != NULL) {
-        list = item->list;
-        ln   = link_list_first(list);
-        while (ln) {
-            tln = ln;
-            ln = link_list_get_next(list, ln);
-            link_list_remove(list, tln);
-            tc_pfree(ctx.pool, tln->data);
-            tc_pfree(ctx.pool, tln);
-        }
-
-        tc_pfree(ctx.pool, item);
-        tc_pfree(ctx.pool, list);
-
-        hash_del(ctx.table, ctx.pool, s->hash_key);
-    }
-
+    release_resources(s->hash_key);
     return TC_OK;
 }
 
 static int 
 proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 {
-    bool              is_need_omit;
     uint16_t          size_tcp;
     unsigned char    *p, *payload, pack_number;
     tc_mysql_session *mysql_sess;
@@ -339,7 +344,6 @@ proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 
     if (!s->sm.fake_syn) {
 
-        is_need_omit = false;
         mysql_sess = s->data;
         
         if (!mysql_sess->req_begin) {
@@ -355,7 +359,6 @@ proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 
             } else if (pack_number == (unsigned char) SEC_AUTH_PACKET_NUM) { 
                 /* if it is the second authenticate_user, skip it */
-                is_need_omit = true;
                 tc_log_debug0(LOG_NOTICE, 0, "omit sec validation for mysql");
                 mysql_sess->req_begin = 1; 
                 mysql_sess->seq_diff = s->cur_pack.cont_len;

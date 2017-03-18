@@ -10,6 +10,7 @@
 
 typedef struct {
     uint32_t req_begin:1;
+    uint32_t old_ps_cleaned:1;
     uint32_t fir_auth_added:1;
     uint32_t seq_diff;
 } tc_mysql_session;
@@ -217,6 +218,7 @@ check_pack_needed_for_recons(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
         }
 
         if (item->list->size > MAX_SP_SIZE) {
+            tc_log_info(LOG_INFO, 0, "too many prepared stmts for a session");
             return false;
         }
 
@@ -299,6 +301,8 @@ prepare_for_renew_session(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
         }
     }
 
+    mysql_sess->old_ps_cleaned = 0;
+
     return TC_OK;
 }
 
@@ -342,9 +346,9 @@ proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
         return PACK_STOP;
     }
 
-    if (!s->sm.fake_syn) {
+    mysql_sess = s->data;
 
-        mysql_sess = s->data;
+    if (!s->sm.fake_syn) {
         
         if (!mysql_sess->req_begin) {
             size_tcp    = tcp->doff << 2;
@@ -355,13 +359,17 @@ proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
 
             if (pack_number == 0) { 
                 mysql_sess->req_begin = 1; 
+                mysql_sess->old_ps_cleaned = 1;
                 tc_log_debug0(LOG_NOTICE, 0, "it has no sec auth packet");
+                release_resources(s->hash_key);
 
             } else if (pack_number == (unsigned char) SEC_AUTH_PACKET_NUM) { 
                 /* if it is the second authenticate_user, skip it */
                 tc_log_debug0(LOG_NOTICE, 0, "omit sec validation for mysql");
                 mysql_sess->req_begin = 1; 
                 mysql_sess->seq_diff = s->cur_pack.cont_len;
+                mysql_sess->old_ps_cleaned = 1;
+                release_resources(s->hash_key);
 
                 return PACK_NEXT;
             }    
@@ -374,6 +382,11 @@ proc_auth(tc_sess_t *s, tc_iph_t *ip, tc_tcph_t *tcp)
                 ctx.fir_auth_cont_len = s->cur_pack.cont_len;
                 tc_log_info(LOG_NOTICE, 0, "fir auth is set");
             }
+        }
+    } else {
+        if (!mysql_sess->old_ps_cleaned) {
+            mysql_sess->old_ps_cleaned = 1;
+            release_resources(s->hash_key);
         }
     }
     

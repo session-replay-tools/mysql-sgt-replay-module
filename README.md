@@ -64,6 +64,10 @@ Please refer to [TCPCopy](https://github.com/session-replay-tools/tcpcopy) for m
       server, do the necessary modifications and send these packets to the target port 
       '3306' on '10.110.12.17'(the target MySQL), and connect 10.110.12.18 for asking 
       intercept to pass response packets to it.
+      
+## Note
+1. Only the complete sesssion could be replayed
+2. Currently, it does not support MySQL 8.0 yet.
 
 ## Release History
 + 2017.03  v1.0    mysql-sgt-replay-module released
@@ -75,6 +79,6 @@ Have a bug or a feature request? [Please open a new issue](https://github.com/se
 
 ## Copyright and license
 
-Copyright 2014 under [the BSD license](LICENSE).
+Copyright 2022 under [the BSD license](LICENSE).
 
 

@@ -1,12 +1,12 @@
-# A TCPCopy module for MySQL Replay
+# A TCPCopy Module for MySQL Session Replay
 
-mysql-sgt-replay-module is a TCPCopy module that can be used to replay MySQL sessions to support real testing of MySQL applications. 
+The `mysql-sgt-replay-module` is a TCPCopy extension designed to replay MySQL sessions, enabling realistic testing of MySQL applications.
 
-Please refer to [TCPCopy](https://github.com/session-replay-tools/tcpcopy) for more details before reading the following.
+For detailed information, please consult [TCPCopy](https://github.com/session-replay-tools/tcpcopy) before proceeding.
 
 ## Installation
 
-### Getting intercept installed on the assistant server
+### Installing `intercept` on the Assistant Server
 1. git clone git://github.com/session-replay-tools/intercept.git
 2. cd intercept
 3. ./configure 
@@ -14,7 +14,7 @@ Please refer to [TCPCopy](https://github.com/session-replay-tools/tcpcopy) for m
 5. make install
 
 
-### Getting tcpcopy installed on the online server
+### Installing `tcpcopy` on the Online Server
 1. git clone git://github.com/session-replay-tools/tcpcopy.git
 2. cd tcpcopy
 3. git clone git://github.com/session-replay-tools/mysql-sgt-replay-module.git
@@ -23,62 +23,53 @@ Please refer to [TCPCopy](https://github.com/session-replay-tools/tcpcopy) for m
 6. make install
 
 
-## Usage guide
+## Usage Guide
  
-### 1) On the target server which runs MySQL applications:
-      a) Set route commands to route response packets to the assistant server
+### 1. On the target server which runs MySQL applications:
+a) Configure Routing to Direct Response Packets to the Assistant Server
 
-        For example:
+For example, assuming `10.110.12.18` is the IP address of the assistant server and `10.110.12.15` is the MySQL client IP address, use the following route command to direct all responses from `10.110.12.15` to the assistant server:
 
-           Assume 10.110.12.18 is the IP address of the assistant server and 
-        10.110.12.15 is the MySQL client IP address. We set the following route 
-        command to route all responses to the 10.110.12.15 to the assistant server.
-
-           route add -host 10.110.12.15 gw 10.110.12.18
+`route add -host 10.110.12.15 gw 10.110.12.18`
         
-      b) Start MySQL with --skip-grant-tables
+b) Start MySQL with `--skip-grant-tables`
 
-### 2) On the assistant server which runs intercept(root privilege or the CAP_NET_RAW capability is required):
+### 2. **On the Assistant Server Running `intercept` (Root Privilege or CAP_NET_RAW Capability Required):**
    
-       ./intercept -F <filter> -i <device,> 
-	  
-       Note that the filter format is the same as the pcap filter.
-        
-       For example:
+  `./intercept -F <filter> -i <device>`
 
-          ./intercept -i eth0 -F 'tcp and src port 3306' -d
+   Note that the filter format is the same as the pcap filter. For example:
 
-          intercept will capture response packets of the TCP based application which 
-      listens on port 3306 from device eth0 
+   `./intercept -i eth0 -F 'tcp and src port 8080' -d`
+
+   In this example, `intercept` will capture response packets from a TCP-based application listening on port 3306, using the eth0 network device.
     
 	
-### 3) On the online source server (root privilege or the CAP_NET_RAW capability is required):
+### 3) **On the Online Source Server (Root Privilege or CAP_NET_RAW Capability Required):**
       
-      ./tcpcopy -x localServerPort-targetServerIP:targetServerPort -s <intercept server,> 
-      
-      For example(assume 10.110.12.17 is the IP address of the target server):
+`./tcpcopy -x localServerPort-targetServerIP:targetServerPort -s <intercept server> [-c <ip range>]`
 
-          ./tcpcopy -x 3306-10.110.12.17:3306 -s 10.110.12.18 
+For example (assuming 10.110.12.17 is the IP address of the target server):
 
-          tcpcopy would capture MySQL packets(assume MySQL listens on 3306 port) on current 
-      server, do the necessary modifications and send these packets to the target port 
-      '3306' on '10.110.12.17'(the target MySQL), and connect 10.110.12.18 for asking 
-      intercept to pass response packets to it.
-      
+`./tcpcopy -x 3306-10.110.12.17:3306 -s 10.110.12.18`
+
+`tcpcopy` captures MySQL packets (assuming MySQL listens on port 3306) on the current server, modifies them as needed, and forwards them to port 3306 on `10.110.12.17` (the target MySQL server). It also connects to `10.110.12.18` to request that `intercept` forwards the response packets to it.
+
 ## Note
 1. Only the complete sesssion could be replayed
 2. Currently, it does not support MySQL 8.0 yet.
+3. For additional assistance, visit [tcpcopy](https://github.com/session-replay-tools/tcpcopy).
 
 ## Release History
 + 2017.03  v1.0    mysql-sgt-replay-module released
++ 2024.09  v1.0    Open source fully uses English
 
-
-## Bugs and feature requests
+## Bugs and Feature Requests
 Have a bug or a feature request? [Please open a new issue](https://github.com/session-replay-tools/mysql-sgt-replay-module/issues). Before opening any issue, please search for existing issues.
 
 
-## Copyright and license
+## Copyright and License
 
-Copyright 2022 under [the BSD license](LICENSE).
+Copyright 2024 under [the BSD license](LICENSE).
 
 

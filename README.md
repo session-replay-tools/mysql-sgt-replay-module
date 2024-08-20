@@ -25,7 +25,7 @@ For detailed information, please consult [TCPCopy](https://github.com/session-re
 
 ## Usage Guide
  
-### 1. On the target server which runs MySQL applications:
+### 1. **On the Target Server Running MySQL Applications:**
 a) Configure Routing to Direct Response Packets to the Assistant Server
 
 For example, assuming `10.110.12.18` is the IP address of the assistant server and `10.110.12.15` is the MySQL client IP address, use the following route command to direct all responses from `10.110.12.15` to the assistant server:
@@ -40,7 +40,7 @@ b) Start MySQL with `--skip-grant-tables`
 
    Note that the filter format is the same as the pcap filter. For example:
 
-   `./intercept -i eth0 -F 'tcp and src port 8080' -d`
+   `./intercept -i eth0 -F 'tcp and src port 3306' -d`
 
    In this example, `intercept` will capture response packets from a TCP-based application listening on port 3306, using the eth0 network device.
     
